@@ -2,9 +2,11 @@ using Bogus;
 using Hangfire;
 using MediatR;
 using MediaTr.Manager.Configurations;
+using MediaTr.Manager.Jobs;
 using MediaTr.Manager.Mock;
 using MediaTr.Manager.Model.Agreggates;
 using MediaTr.Manager.Requests;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Hangfire");
@@ -33,6 +35,18 @@ app.MapGet("/sendPayment", (IMediator mediatr, Faker faker) =>
     return "Payment";
 })
 .WithName("SendPayment")
+.WithOpenApi();
+
+app.MapPost("/schedulePayment", (IMediator mediatr, Faker faker) =>
+{
+    Order order = new CreateOrder(faker).Create();
+    SendOrder sendOrder = new() { Order = order };
+   
+    RecurringJob.AddOrUpdate<Recurrent>("schedulePayment", job => job.Execute(), "0/3 * * * * *");
+    
+    return "Payment";
+})
+.WithName("schedulePayment")
 .WithOpenApi();
 
 app.Run();
