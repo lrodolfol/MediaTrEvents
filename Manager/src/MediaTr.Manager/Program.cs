@@ -28,23 +28,21 @@ app.UseHttpsRedirection();
 
 app.MapGet("/sendPayment", (IMediator mediatr, Faker faker) =>
 {
-    Order order = new CreateOrder(faker).Create();
-    SendOrder sendOrder = new() { Order = order };
+    BackgroundJob.Enqueue<JobsImpl>(job => job.Execute());
 
-    var result = mediatr.Send(sendOrder);
     return "Payment";
 })
 .WithName("SendPayment")
 .WithOpenApi();
 
-app.MapPost("/schedulePayment", (IMediator mediatr, Faker faker) =>
+app.MapPost("/schedulePayment", (RecurrentPayload payload) =>
 {
-    Order order = new CreateOrder(faker).Create();
-    SendOrder sendOrder = new() { Order = order };
-   
-    RecurringJob.AddOrUpdate<Recurrent>("schedulePayment", job => job.Execute(), "0/3 * * * * *");
+    if(payload.TimeToProcess > 59)
+        return "Time to process must be less than 60 seconds";
+
+    RecurringJob.AddOrUpdate<JobsImpl>(payload.JobName, job => job.Execute(), $"0/{payload.TimeToProcess} * * * * *");
     
-    return "Payment";
+    return $"Job scheduled for each {payload.TimeToProcess} minutes";
 })
 .WithName("schedulePayment")
 .WithOpenApi();

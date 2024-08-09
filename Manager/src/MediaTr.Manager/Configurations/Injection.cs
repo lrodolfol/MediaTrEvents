@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using Hangfire;
+using MediaTr.Manager.Jobs;
 using System.Reflection;
 
 namespace MediaTr.Manager.Configurations;
@@ -13,7 +14,9 @@ public static class Injection
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
-        services.AddSingleton<Faker>(x => new Faker("pt_BR"));
+        services.AddScoped<Faker>(x => new Faker("pt_BR"));
+
+        services.AddScoped<IJobs, JobsImpl>();
 
         return services;
     }
